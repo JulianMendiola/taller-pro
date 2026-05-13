@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { supabase } from "../lib/supabase";
 
@@ -9,36 +9,50 @@ interface Props {
   onSuccess: () => void;
 }
 
-export default function NuevoClienteModal({
+interface Cliente {
+  id: number;
+  nombre: string;
+}
+
+export default function NuevoVehiculoModal({
   onClose,
   onSuccess,
 }: Props) {
 
-  const [nombre, setNombre] = useState("");
-  const [telefono, setTelefono] = useState("");
-  const [cuit, setCuit] = useState("");
-  const [email, setEmail] = useState("");
-  const [direccion, setDireccion] = useState("");
+  const [clientes, setClientes] = useState<Cliente[]>([]);
 
-  const [loading, setLoading] = useState(false);
+  const [clienteId, setClienteId] = useState("");
 
-  async function crearCliente() {
+  const [marca, setMarca] = useState("");
+  const [modelo, setModelo] = useState("");
+  const [patente, setPatente] = useState("");
 
-    if (!nombre) return;
+  useEffect(() => {
+    obtenerClientes();
+  }, []);
 
-    setLoading(true);
+  async function obtenerClientes() {
+
+    const { data } = await supabase
+      .from("clientes")
+      .select("id, nombre");
+
+    setClientes(data || []);
+  }
+
+  async function crearVehiculo() {
 
     const { error } = await supabase
-      .from("clientes")
+      .from("vehiculos")
       .insert({
-        nombre,
-        telefono,
-        cuit,
-        email,
-        direccion,
-      });
 
-    setLoading(false);
+        cliente_id: clienteId,
+
+        marca,
+        modelo,
+        patente,
+
+      });
 
     if (error) {
       console.error(error);
@@ -72,16 +86,46 @@ export default function NuevoClienteModal({
       >
 
         <h2 className="text-3xl font-bold mb-6">
-          Nuevo Cliente
+          Nuevo Vehículo
         </h2>
 
         <div className="space-y-4">
 
+          <select
+            value={clienteId}
+            onChange={(e) => setClienteId(e.target.value)}
+            className="
+              w-full
+              bg-zinc-950
+              border border-zinc-800
+              rounded-2xl
+              px-5 py-4
+              outline-none
+            "
+          >
+
+            <option value="">
+              Seleccionar cliente
+            </option>
+
+            {clientes.map((cliente) => (
+
+              <option
+                key={cliente.id}
+                value={cliente.id}
+              >
+                {cliente.nombre}
+              </option>
+
+            ))}
+
+          </select>
+
           <input
             type="text"
-            placeholder="Nombre"
-            value={nombre}
-            onChange={(e) => setNombre(e.target.value)}
+            placeholder="Marca"
+            value={marca}
+            onChange={(e) => setMarca(e.target.value)}
             className="
               w-full
               bg-zinc-950
@@ -94,39 +138,9 @@ export default function NuevoClienteModal({
 
           <input
             type="text"
-            placeholder="Teléfono"
-            value={telefono}
-            onChange={(e) => setTelefono(e.target.value)}
-            className="
-              w-full
-              bg-zinc-950
-              border border-zinc-800
-              rounded-2xl
-              px-5 py-4
-              outline-none
-            "
-          />
-
-          <input
-  type="text"
-  placeholder="CUIT"
-  value={cuit}
-  onChange={(e) => setCuit(e.target.value)}
-  className="
-    w-full
-    bg-zinc-950
-    border border-zinc-800
-    rounded-2xl
-    px-5 py-4
-    outline-none
-  "
-/>
-
-          <input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            placeholder="Modelo"
+            value={modelo}
+            onChange={(e) => setModelo(e.target.value)}
             className="
               w-full
               bg-zinc-950
@@ -139,9 +153,9 @@ export default function NuevoClienteModal({
 
           <input
             type="text"
-            placeholder="Dirección"
-            value={direccion}
-            onChange={(e) => setDireccion(e.target.value)}
+            placeholder="Patente"
+            value={patente}
+            onChange={(e) => setPatente(e.target.value)}
             className="
               w-full
               bg-zinc-950
@@ -154,7 +168,6 @@ export default function NuevoClienteModal({
 
         </div>
 
-        {/* BOTONES */}
         <div className="flex justify-end gap-4 mt-8">
 
           <button
@@ -171,8 +184,7 @@ export default function NuevoClienteModal({
           </button>
 
           <button
-            onClick={crearCliente}
-            disabled={loading}
+            onClick={crearVehiculo}
             className="
               px-5 py-3
               rounded-2xl
@@ -182,9 +194,7 @@ export default function NuevoClienteModal({
               font-semibold
             "
           >
-
-            {loading ? "Guardando..." : "Guardar Cliente"}
-
+            Guardar
           </button>
 
         </div>
@@ -192,5 +202,6 @@ export default function NuevoClienteModal({
       </div>
 
     </div>
+
   );
 }

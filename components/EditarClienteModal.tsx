@@ -5,40 +5,35 @@ import { useState } from "react";
 import { supabase } from "../lib/supabase";
 
 interface Props {
+  cliente: any;
   onClose: () => void;
   onSuccess: () => void;
 }
 
-export default function NuevoClienteModal({
+export default function EditarClienteModal({
+  cliente,
   onClose,
   onSuccess,
 }: Props) {
 
-  const [nombre, setNombre] = useState("");
-  const [telefono, setTelefono] = useState("");
-  const [cuit, setCuit] = useState("");
-  const [email, setEmail] = useState("");
-  const [direccion, setDireccion] = useState("");
+  const [nombre, setNombre] = useState(cliente.nombre || "");
+  const [telefono, setTelefono] = useState(cliente.telefono || "");
+  const [cuit, setCuit] = useState(cliente.cuit || "");
+  const [email, setEmail] = useState(cliente.email || "");
+  const [direccion, setDireccion] = useState(cliente.direccion || "");
 
-  const [loading, setLoading] = useState(false);
-
-  async function crearCliente() {
-
-    if (!nombre) return;
-
-    setLoading(true);
+  async function guardarCambios() {
 
     const { error } = await supabase
       .from("clientes")
-      .insert({
+      .update({
         nombre,
         telefono,
         cuit,
         email,
         direccion,
-      });
-
-    setLoading(false);
+      })
+      .eq("id", cliente.id);
 
     if (error) {
       console.error(error);
@@ -72,89 +67,53 @@ export default function NuevoClienteModal({
       >
 
         <h2 className="text-3xl font-bold mb-6">
-          Nuevo Cliente
+          Editar Cliente
         </h2>
 
         <div className="space-y-4">
 
           <input
             type="text"
-            placeholder="Nombre"
             value={nombre}
             onChange={(e) => setNombre(e.target.value)}
-            className="
-              w-full
-              bg-zinc-950
-              border border-zinc-800
-              rounded-2xl
-              px-5 py-4
-              outline-none
-            "
+            placeholder="Nombre"
+            className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl px-5 py-4 outline-none"
           />
 
           <input
             type="text"
-            placeholder="Teléfono"
             value={telefono}
             onChange={(e) => setTelefono(e.target.value)}
-            className="
-              w-full
-              bg-zinc-950
-              border border-zinc-800
-              rounded-2xl
-              px-5 py-4
-              outline-none
-            "
+            placeholder="Teléfono"
+            className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl px-5 py-4 outline-none"
           />
 
           <input
-  type="text"
-  placeholder="CUIT"
-  value={cuit}
-  onChange={(e) => setCuit(e.target.value)}
-  className="
-    w-full
-    bg-zinc-950
-    border border-zinc-800
-    rounded-2xl
-    px-5 py-4
-    outline-none
-  "
-/>
+            type="text"
+            value={cuit}
+            onChange={(e) => setCuit(e.target.value)}
+            placeholder="CUIT"
+            className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl px-5 py-4 outline-none"
+          />
 
           <input
             type="email"
-            placeholder="Email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="
-              w-full
-              bg-zinc-950
-              border border-zinc-800
-              rounded-2xl
-              px-5 py-4
-              outline-none
-            "
+            placeholder="Email"
+            className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl px-5 py-4 outline-none"
           />
 
           <input
             type="text"
-            placeholder="Dirección"
             value={direccion}
             onChange={(e) => setDireccion(e.target.value)}
-            className="
-              w-full
-              bg-zinc-950
-              border border-zinc-800
-              rounded-2xl
-              px-5 py-4
-              outline-none
-            "
+            placeholder="Dirección"
+            className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl px-5 py-4 outline-none"
           />
 
         </div>
 
-        {/* BOTONES */}
         <div className="flex justify-end gap-4 mt-8">
 
           <button
@@ -171,8 +130,7 @@ export default function NuevoClienteModal({
           </button>
 
           <button
-            onClick={crearCliente}
-            disabled={loading}
+            onClick={guardarCambios}
             className="
               px-5 py-3
               rounded-2xl
@@ -182,9 +140,7 @@ export default function NuevoClienteModal({
               font-semibold
             "
           >
-
-            {loading ? "Guardando..." : "Guardar Cliente"}
-
+            Guardar cambios
           </button>
 
         </div>
@@ -192,5 +148,6 @@ export default function NuevoClienteModal({
       </div>
 
     </div>
+
   );
 }
