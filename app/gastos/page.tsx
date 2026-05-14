@@ -24,13 +24,17 @@ interface Movimiento {
 
 export default function GastosPage() {
 
-  const [movimientos, setMovimientos] = useState<Movimiento[]>([]);
+  const [movimientos, setMovimientos] =
+    useState<Movimiento[]>([]);
 
-  const [mesSeleccionado, setMesSeleccionado] = useState("04");
+  const [mesSeleccionado, setMesSeleccionado] =
+    useState("04");
 
-  const [ingresos, setIngresos] = useState(0);
+  const [ingresos, setIngresos] =
+    useState(0);
 
-  const [egresos, setEgresos] = useState(0);
+  const [egresos, setEgresos] =
+    useState(0);
 
   useEffect(() => {
     obtenerMovimientos();
@@ -54,7 +58,8 @@ export default function GastosPage() {
     const filtrados =
       data?.filter((mov) => {
 
-        const fecha = new Date(mov.fecha);
+        const fecha =
+          new Date(mov.fecha);
 
         const mes =
           String(fecha.getMonth() + 1)
@@ -67,34 +72,66 @@ export default function GastosPage() {
     setMovimientos(filtrados);
 
     const totalIngresos =
+
       filtrados
-        .filter((m) => m.tipo === "Entrada")
-        .reduce((acc, mov) => acc + Number(mov.monto), 0);
+
+        .filter((m) =>
+          m.tipo === "Entrada"
+        )
+
+        .reduce(
+          (acc, mov) =>
+            acc + Number(mov.monto),
+          0
+        );
 
     const totalEgresos =
+
       filtrados
-        .filter((m) => m.tipo === "Salida")
-        .reduce((acc, mov) => acc + Number(mov.monto), 0);
+
+        .filter((m) =>
+          m.tipo === "Salida"
+        )
+
+        .reduce(
+          (acc, mov) =>
+            acc + Number(mov.monto),
+          0
+        );
 
     setIngresos(totalIngresos);
 
     setEgresos(totalEgresos);
   }
 
-  const balance = ingresos - egresos;
+  const balance =
+    ingresos - egresos;
 
   return (
 
     <DashboardLayout>
 
       {/* HEADER */}
-      <div className="mb-10">
+      <div className="mb-8">
 
-        <h1 className="text-5xl font-bold">
+        <h1
+          className="
+            text-3xl
+            md:text-5xl
+            font-bold
+          "
+        >
           Gastos
         </h1>
 
-        <p className="text-zinc-400 mt-2">
+        <p
+          className="
+            text-zinc-400
+            mt-2
+            text-sm
+            md:text-base
+          "
+        >
           Control financiero mensual
         </p>
 
@@ -108,49 +145,87 @@ export default function GastosPage() {
           value={mesSeleccionado}
 
           onChange={(e) =>
-            setMesSeleccionado(e.target.value)
+            setMesSeleccionado(
+              e.target.value
+            )
           }
 
           className="
+            w-full
+            md:w-auto
             bg-zinc-900
             border border-zinc-800
             rounded-2xl
-            px-5 py-4
+            px-4 py-3
+            md:px-5 md:py-4
             text-white
             outline-none
           "
         >
 
-          <option value="01">Enero</option>
+          <option value="01">
+            Enero
+          </option>
 
-          <option value="02">Febrero</option>
+          <option value="02">
+            Febrero
+          </option>
 
-          <option value="03">Marzo</option>
+          <option value="03">
+            Marzo
+          </option>
 
-          <option value="04">Abril</option>
+          <option value="04">
+            Abril
+          </option>
 
-          <option value="05">Mayo</option>
+          <option value="05">
+            Mayo
+          </option>
 
-          <option value="06">Junio</option>
+          <option value="06">
+            Junio
+          </option>
 
-          <option value="07">Julio</option>
+          <option value="07">
+            Julio
+          </option>
 
-          <option value="08">Agosto</option>
+          <option value="08">
+            Agosto
+          </option>
 
-          <option value="09">Septiembre</option>
+          <option value="09">
+            Septiembre
+          </option>
 
-          <option value="10">Octubre</option>
+          <option value="10">
+            Octubre
+          </option>
 
-          <option value="11">Noviembre</option>
+          <option value="11">
+            Noviembre
+          </option>
 
-          <option value="12">Diciembre</option>
+          <option value="12">
+            Diciembre
+          </option>
 
         </select>
 
       </div>
 
-      {/* KPIs */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+      {/* KPIS */}
+      <div
+        className="
+          grid
+          grid-cols-1
+          md:grid-cols-3
+          gap-4
+          md:gap-6
+          mb-8
+        "
+      >
 
         {/* INGRESOS */}
         <div
@@ -158,15 +233,28 @@ export default function GastosPage() {
             bg-zinc-900
             border border-zinc-800
             rounded-3xl
-            p-8
+            p-5 md:p-8
           "
         >
 
-          <p className="text-zinc-400 mb-2">
+          <p
+            className="
+              text-zinc-400
+              mb-2
+              text-sm
+            "
+          >
             Ingresos
           </p>
 
-          <h2 className="text-4xl font-bold text-green-400">
+          <h2
+            className="
+              text-3xl
+              md:text-4xl
+              font-bold
+              text-green-400
+            "
+          >
 
             $
             {ingresos.toLocaleString("es-AR")}
@@ -181,15 +269,28 @@ export default function GastosPage() {
             bg-zinc-900
             border border-zinc-800
             rounded-3xl
-            p-8
+            p-5 md:p-8
           "
         >
 
-          <p className="text-zinc-400 mb-2">
+          <p
+            className="
+              text-zinc-400
+              mb-2
+              text-sm
+            "
+          >
             Gastos
           </p>
 
-          <h2 className="text-4xl font-bold text-red-400">
+          <h2
+            className="
+              text-3xl
+              md:text-4xl
+              font-bold
+              text-red-400
+            "
+          >
 
             $
             {egresos.toLocaleString("es-AR")}
@@ -204,17 +305,25 @@ export default function GastosPage() {
             bg-zinc-900
             border border-zinc-800
             rounded-3xl
-            p-8
+            p-5 md:p-8
           "
         >
 
-          <p className="text-zinc-400 mb-2">
+          <p
+            className="
+              text-zinc-400
+              mb-2
+              text-sm
+            "
+          >
             Balance
           </p>
 
           <h2
             className={`
-              text-4xl font-bold
+              text-3xl
+              md:text-4xl
+              font-bold
 
               ${
                 balance >= 0
@@ -243,9 +352,20 @@ export default function GastosPage() {
         "
       >
 
-        <div className="p-6 border-b border-zinc-800">
+        <div
+          className="
+            p-5 md:p-6
+            border-b border-zinc-800
+          "
+        >
 
-          <h2 className="text-2xl font-bold">
+          <h2
+            className="
+              text-xl
+              md:text-2xl
+              font-bold
+            "
+          >
             Movimientos del mes
           </h2>
 
@@ -253,7 +373,12 @@ export default function GastosPage() {
 
         <div className="overflow-x-auto">
 
-          <table className="w-full min-w-[900px]">
+          <table
+            className="
+              w-full
+              min-w-[800px]
+            "
+          >
 
             <thead
               className="
@@ -264,19 +389,19 @@ export default function GastosPage() {
 
               <tr>
 
-                <th className="text-left p-6">
+                <th className="text-left p-4 md:p-6">
                   Tipo
                 </th>
 
-                <th className="text-left p-6">
+                <th className="text-left p-4 md:p-6">
                   Categoría
                 </th>
 
-                <th className="text-left p-6">
+                <th className="text-left p-4 md:p-6">
                   Descripción
                 </th>
 
-                <th className="text-left p-6">
+                <th className="text-left p-4 md:p-6">
                   Monto
                 </th>
 
@@ -297,20 +422,29 @@ export default function GastosPage() {
                   "
                 >
 
-                  <td className="p-6">
+                  <td className="p-4 md:p-6">
 
                     <span
                       className={`
-                        px-4 py-2
+                        px-3
+                        py-2
                         rounded-xl
-                        text-sm
+                        text-xs
+                        md:text-sm
                         font-semibold
 
                         ${
                           mov.tipo === "Entrada"
-                            ? "bg-green-500/20 text-green-400"
 
-                            : "bg-red-500/20 text-red-400"
+                            ? `
+                              bg-green-500/20
+                              text-green-400
+                            `
+
+                            : `
+                              bg-red-500/20
+                              text-red-400
+                            `
                         }
                       `}
                     >
@@ -321,15 +455,20 @@ export default function GastosPage() {
 
                   </td>
 
-                  <td className="p-6">
+                  <td className="p-4 md:p-6">
                     {mov.categoria}
                   </td>
 
-                  <td className="p-6">
+                  <td className="p-4 md:p-6">
                     {mov.descripcion}
                   </td>
 
-                  <td className="p-6 font-semibold">
+                  <td
+                    className="
+                      p-4 md:p-6
+                      font-semibold
+                    "
+                  >
 
                     $
                     {Number(mov.monto)
