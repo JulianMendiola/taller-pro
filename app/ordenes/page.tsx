@@ -4,9 +4,9 @@ import { useEffect, useState } from "react";
 
 import { useRouter } from "next/navigation";
 
-import DashboardLayout from "../components/DashboardLayout";
+import DashboardLayout from "@/components/DashboardLayout";
 
-import { supabase } from "../lib/supabase";
+import { supabase } from "@/lib/supabase";
 
 interface Orden {
 
@@ -16,20 +16,15 @@ interface Orden {
 
   estado: string;
 
-  vehiculos?: {
+  patente: string;
 
-    patente: string;
+  marca: string;
 
-    marca: string;
+  modelo: string;
 
-    modelo: string;
+  cliente: string;
 
-    clientes?: {
-      nombre: string;
-      telefono: string;
-    };
-
-  };
+  telefono: string;
 
 }
 
@@ -74,29 +69,55 @@ export default function OrdenesPage() {
       .from("ordenes_trabajo")
 
       .select(`
-        *,
+        id,
+        descripcion,
+        estado,
         vehiculos (
-
           patente,
           marca,
           modelo,
-
           clientes (
             nombre,
             telefono
           )
-
         )
-      `)
-
-      .order("id", { ascending: false });
+      `);
 
     if (error) {
+
       console.error(error);
+
       return;
     }
 
-    setOrdenes(data || []);
+    const ordenesTransformadas =
+
+      data.map((orden: any) => ({
+
+        id: orden.id,
+
+        descripcion: orden.descripcion,
+
+        estado: orden.estado,
+
+        patente:
+          orden.vehiculos?.patente || "-",
+
+        marca:
+          orden.vehiculos?.marca || "-",
+
+        modelo:
+          orden.vehiculos?.modelo || "-",
+
+        cliente:
+          orden.vehiculos?.clientes?.nombre || "-",
+
+        telefono:
+          orden.vehiculos?.clientes?.telefono || "-",
+
+      }));
+
+    setOrdenes(ordenesTransformadas);
   }
 
   return (
@@ -134,7 +155,7 @@ export default function OrdenesPage() {
 
         <input
           type="text"
-          placeholder="🔎 Buscar patente, cliente o trabajo..."
+          placeholder="🔎 Buscar..."
           value={busqueda}
           onChange={(e) =>
             setBusqueda(e.target.value)
@@ -146,8 +167,6 @@ export default function OrdenesPage() {
             rounded-2xl
             px-4
             py-3
-            md:px-5
-            md:py-4
             outline-none
             text-white
           "
@@ -176,7 +195,8 @@ export default function OrdenesPage() {
 
             <thead
               className="
-                border-b border-zinc-800
+                border-b
+                border-zinc-800
                 text-zinc-400
               "
             >
@@ -196,7 +216,7 @@ export default function OrdenesPage() {
                 </th>
 
                 <th className="text-left p-4 md:p-6">
-                  Trabajo realizado
+                  Trabajo
                 </th>
 
                 <th className="text-left p-4 md:p-6">
@@ -218,20 +238,20 @@ export default function OrdenesPage() {
 
                   return (
 
-                    orden.vehiculos?.patente
-                      ?.toLowerCase()
+                    orden.patente
+                      .toLowerCase()
                       .includes(texto)
 
                     ||
 
-                    orden.vehiculos?.clientes?.nombre
-                      ?.toLowerCase()
+                    orden.cliente
+                      .toLowerCase()
                       .includes(texto)
 
                     ||
 
                     orden.descripcion
-                      ?.toLowerCase()
+                      .toLowerCase()
                       .includes(texto)
 
                   );
@@ -243,7 +263,8 @@ export default function OrdenesPage() {
                   <tr
                     key={orden.id}
                     className="
-                      border-b border-zinc-800
+                      border-b
+                      border-zinc-800
                       hover:bg-zinc-800/40
                       transition
                     "
@@ -257,7 +278,7 @@ export default function OrdenesPage() {
                           text-blue-400
                         "
                       >
-                        {orden.vehiculos?.patente || "-"}
+                        {orden.patente}
                       </div>
 
                       <div
@@ -266,18 +287,17 @@ export default function OrdenesPage() {
                           text-zinc-400
                         "
                       >
-                        {orden.vehiculos?.marca}{" "}
-                        {orden.vehiculos?.modelo}
+                        {orden.marca} {orden.modelo}
                       </div>
 
                     </td>
 
                     <td className="p-4 md:p-6">
-                      {orden.vehiculos?.clientes?.nombre || "-"}
+                      {orden.cliente}
                     </td>
 
                     <td className="p-4 md:p-6">
-                      {orden.vehiculos?.clientes?.telefono || "-"}
+                      {orden.telefono}
                     </td>
 
                     <td className="p-4 md:p-6 font-semibold">
@@ -303,17 +323,10 @@ export default function OrdenesPage() {
                                 text-green-400
                               `
 
-                              : orden.estado === "En proceso"
-
-                                ? `
-                                  bg-yellow-500/20
-                                  text-yellow-400
-                                `
-
-                                : `
-                                  bg-red-500/20
-                                  text-red-400
-                                `
+                              : `
+                                bg-yellow-500/20
+                                text-yellow-400
+                              `
                           }
                         `}
                       >
