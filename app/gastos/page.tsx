@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { Edit, Trash2 } from "lucide-react";
 
+import ConfirmDeleteModal from "@/components/ConfirmDeleteModal";
 import DashboardLayout from "@/components/DashboardLayout";
-import NuevoMovimientoModal from "@/components/NuevoMovimientoModal";
+import MovimientoFormModal from "@/components/MovimientoFormModal";
 import { supabase } from "@/lib/supabase";
 
 interface Movimiento {
@@ -64,6 +66,9 @@ export default function GastosPage() {
   const [mesSeleccionado, setMesSeleccionado] = useState(mesActual);
   const [anioSeleccionado, setAnioSeleccionado] = useState(anioActual);
   const [mostrarModal, setMostrarModal] = useState(false);
+  const [movimientoEditar, setMovimientoEditar] = useState<Movimiento | null>(null);
+  const [movimientoEliminar, setMovimientoEliminar] =
+    useState<Movimiento | null>(null);
 
   useEffect(() => {
     obtenerMovimientos();
@@ -118,6 +123,21 @@ export default function GastosPage() {
     }
 
     setMovimientos(data || []);
+  }
+
+  async function eliminarMovimiento(id: number) {
+    const { error } = await supabase
+      .from("movimientos_financieros")
+      .delete()
+      .eq("id", id);
+
+    if (error) {
+      console.error(error);
+      return;
+    }
+
+    setMovimientoEliminar(null);
+    obtenerMovimientos();
   }
 
   function exportarExcel() {
@@ -235,13 +255,62 @@ export default function GastosPage() {
         </div>
       </div>
 
-      <div className="bg-zinc-900 border border-zinc-800 rounded-3xl overflow-hidden">
+      <div className="space-y-3 md:hidden">
+        {movimientosFiltrados.map((movimiento) => (
+          <article
+            key={movimiento.id}
+            className="rounded-3xl border border-zinc-800 bg-zinc-900 p-4"
+          >
+            <div className="mb-3 flex items-start justify-between gap-3">
+              <div>
+                <p className="font-semibold">{movimiento.descripcion}</p>
+                <p className="text-sm text-zinc-400">{movimiento.categoria}</p>
+              </div>
+              <span
+                className={`rounded-xl px-3 py-2 text-xs font-semibold ${
+                  movimiento.tipo === "Entrada"
+                    ? "bg-green-500/20 text-green-400"
+                    : "bg-red-500/20 text-red-400"
+                }`}
+              >
+                {movimiento.tipo}
+              </span>
+            </div>
+
+            <div className="flex items-center justify-between gap-3 text-sm">
+              <span className="text-zinc-400">{formatearFecha(movimiento.fecha)}</span>
+              <span className="text-lg font-bold">
+                $ {Number(movimiento.monto).toLocaleString("es-AR")}
+              </span>
+            </div>
+
+            <div className="mt-4 grid grid-cols-2 gap-2">
+              <button
+                onClick={() => setMovimientoEditar(movimiento)}
+                className="flex items-center justify-center gap-2 rounded-xl bg-yellow-500/20 px-3 py-2 text-sm font-semibold text-yellow-400"
+              >
+                <Edit size={16} />
+                Editar
+              </button>
+              <button
+                onClick={() => setMovimientoEliminar(movimiento)}
+                className="flex items-center justify-center gap-2 rounded-xl bg-red-500/20 px-3 py-2 text-sm font-semibold text-red-400"
+              >
+                <Trash2 size={16} />
+                Eliminar
+              </button>
+            </div>
+          </article>
+        ))}
+      </div>
+
+      <div className="hidden bg-zinc-900 border border-zinc-800 rounded-3xl overflow-hidden md:block">
         <div className="p-5 border-b border-zinc-800">
           <h2 className="text-xl md:text-2xl font-bold">Movimientos del mes</h2>
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[800px]">
+          <table className="w-full min-w-[900px]">
             <thead className="border-b border-zinc-800 text-zinc-400">
               <tr>
                 <th className="text-left p-4 md:p-6">Tipo</th>
@@ -249,6 +318,7 @@ export default function GastosPage() {
                 <th className="text-left p-4 md:p-6">Descripcion</th>
                 <th className="text-left p-4 md:p-6">Monto</th>
                 <th className="text-left p-4 md:p-6">Fecha</th>
+                <th className="text-left p-4 md:p-6">Acciones</th>
               </tr>
             </thead>
 
@@ -277,6 +347,24 @@ export default function GastosPage() {
                   <td className="p-4 md:p-6">
                     {formatearFecha(movimiento.fecha)}
                   </td>
+                  <td className="p-4 md:p-6">
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setMovimientoEditar(movimiento)}
+                        className="rounded-xl bg-yellow-500/20 p-2 text-yellow-400 transition hover:bg-yellow-500/30"
+                        title="Editar movimiento"
+                      >
+                        <Edit size={18} />
+                      </button>
+                      <button
+                        onClick={() => setMovimientoEliminar(movimiento)}
+                        className="rounded-xl bg-red-500/20 p-2 text-red-400 transition hover:bg-red-500/30"
+                        title="Eliminar movimiento"
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                    </div>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -285,9 +373,26 @@ export default function GastosPage() {
       </div>
 
       {mostrarModal && (
-        <NuevoMovimientoModal
+        <MovimientoFormModal
           onClose={() => setMostrarModal(false)}
           onSuccess={obtenerMovimientos}
+        />
+      )}
+
+      {movimientoEditar && (
+        <MovimientoFormModal
+          movimiento={movimientoEditar}
+          onClose={() => setMovimientoEditar(null)}
+          onSuccess={obtenerMovimientos}
+        />
+      )}
+
+      {movimientoEliminar && (
+        <ConfirmDeleteModal
+          title="Eliminar movimiento"
+          message={`Vas a eliminar "${movimientoEliminar.descripcion}". Esta accion no se puede deshacer.`}
+          onClose={() => setMovimientoEliminar(null)}
+          onConfirm={() => eliminarMovimiento(movimientoEliminar.id)}
         />
       )}
     </DashboardLayout>

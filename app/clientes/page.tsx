@@ -30,10 +30,10 @@ export default function ClientesPage() {
     useState(false);
 
   const [clienteEditar, setClienteEditar] =
-    useState<any>(null);
+    useState<Cliente | null>(null);
 
   const [clienteEliminar, setClienteEliminar] =
-    useState<any>(null);
+    useState<Cliente | null>(null);
 
   useEffect(() => {
     obtenerClientes();
@@ -68,6 +68,16 @@ export default function ClientesPage() {
 
     obtenerClientes();
   }
+
+  const clientesFiltrados = clientes.filter((cliente) => {
+    const texto = busqueda.toLowerCase();
+
+    return (
+      cliente.nombre?.toLowerCase().includes(texto) ||
+      cliente.email?.toLowerCase().includes(texto) ||
+      cliente.telefono?.toLowerCase().includes(texto)
+    );
+  });
 
   return (
 
@@ -156,9 +166,47 @@ export default function ClientesPage() {
 
       </div>
 
+      <div className="space-y-3 md:hidden">
+        {clientesFiltrados.map((cliente) => (
+          <article
+            key={cliente.id}
+            className="rounded-3xl border border-zinc-800 bg-zinc-900 p-4"
+          >
+            <div className="mb-3">
+              <p className="font-semibold">{cliente.nombre}</p>
+              <p className="text-sm text-zinc-400">
+                {cliente.telefono || "-"} · {cliente.email || "-"}
+              </p>
+            </div>
+
+            <div className="text-sm text-zinc-400">
+              <p>CUIT: {cliente.cuit || "-"}</p>
+              <p>Direccion: {cliente.direccion || "-"}</p>
+            </div>
+
+            <div className="mt-4 grid grid-cols-2 gap-2">
+              <button
+                onClick={() => setClienteEditar(cliente)}
+                className="rounded-xl bg-yellow-500/20 px-3 py-2 text-sm font-semibold text-yellow-400"
+              >
+                Editar
+              </button>
+              <button
+                onClick={() => setClienteEliminar(cliente)}
+                className="rounded-xl bg-red-500/20 px-3 py-2 text-sm font-semibold text-red-400"
+              >
+                Eliminar
+              </button>
+            </div>
+          </article>
+        ))}
+      </div>
+
       {/* TABLA */}
       <div
         className="
+          hidden
+          md:block
           bg-zinc-900
           border border-zinc-800
           rounded-3xl
@@ -215,36 +263,7 @@ export default function ClientesPage() {
 
             <tbody>
 
-              {clientes
-
-                .filter((cliente) => {
-
-                  const texto =
-                    busqueda.toLowerCase();
-
-                  return (
-
-                    cliente.nombre
-                      ?.toLowerCase()
-                      .includes(texto)
-
-                    ||
-
-                    cliente.email
-                      ?.toLowerCase()
-                      .includes(texto)
-
-                    ||
-
-                    cliente.telefono
-                      ?.toLowerCase()
-                      .includes(texto)
-
-                  );
-
-                })
-
-                .map((cliente) => (
+              {clientesFiltrados.map((cliente) => (
 
                   <tr
                     key={cliente.id}
@@ -369,6 +388,8 @@ export default function ClientesPage() {
       {clienteEliminar && (
 
         <ConfirmDeleteModal
+          title="Eliminar cliente"
+          message="Esta accion no se puede deshacer."
           onClose={() =>
             setClienteEliminar(null)
           }

@@ -2,78 +2,42 @@
 
 interface Props {
   onClose: () => void;
-  onConfirm: () => void;
+  onConfirm: () => void | Promise<void>;
+  title?: string;
+  message?: string;
 }
 
 export default function ConfirmDeleteModal({
   onClose,
   onConfirm,
+  title = "Eliminar registro",
+  message = "Esta accion no se puede deshacer.",
 }: Props) {
-
   return (
-
-    <div
-      className="
-        fixed inset-0
-        bg-black/70
-        flex items-center justify-center
-        z-50
-      "
-    >
-
-      <div
-        className="
-          bg-zinc-900
-          border border-zinc-800
-          rounded-3xl
-          p-8
-          w-full
-          max-w-md
-        "
-      >
-
-        <h2 className="text-3xl font-bold mb-4 text-red-400">
-          Eliminar cliente
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+      <div className="w-full max-w-md rounded-3xl border border-zinc-800 bg-zinc-900 p-6 md:p-8">
+        <h2 className="mb-4 text-2xl font-bold text-red-400 md:text-3xl">
+          {title}
         </h2>
 
-        <p className="text-zinc-400 mb-8">
-          Esta acción no se puede deshacer.
-        </p>
+        <p className="mb-8 text-zinc-400">{message}</p>
 
-        <div className="flex justify-end gap-4">
-
+        <div className="flex flex-col justify-end gap-3 sm:flex-row">
           <button
             onClick={onClose}
-            className="
-              px-5 py-3
-              rounded-2xl
-              bg-zinc-800
-              hover:bg-zinc-700
-              transition
-            "
+            className="rounded-2xl bg-zinc-800 px-5 py-3 transition hover:bg-zinc-700"
           >
             Cancelar
           </button>
 
           <button
             onClick={onConfirm}
-            className="
-              px-5 py-3
-              rounded-2xl
-              bg-red-500
-              hover:bg-red-600
-              transition
-              font-semibold
-            "
+            className="rounded-2xl bg-red-500 px-5 py-3 font-semibold transition hover:bg-red-600"
           >
             Eliminar
           </button>
-
         </div>
-
       </div>
-
     </div>
-
   );
 }
