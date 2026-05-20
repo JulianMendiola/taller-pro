@@ -1,7 +1,7 @@
 "use client";
 export const dynamic = "force-dynamic";
 
-import { Edit, Plus, Trash2 } from "lucide-react";
+import { Edit, Plus, Trash2, MessageCircle } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
@@ -49,6 +49,15 @@ const estadoStyles: Record<string, string> = {
   "En proceso": "bg-yellow-500/20 text-yellow-400",
   Pendiente: "bg-red-500/20 text-red-400",
 };
+
+function generarLinkWhatsApp(orden: Orden): string {
+  const tel = orden.telefono.replace(/\D/g, "");
+  const mensaje =
+    `Hola ${orden.cliente}! 👋 Te avisamos que tu vehículo ` +
+    `*${orden.patente}* (${orden.marca} ${orden.modelo}) ` +
+    `ya está listo para retirar. ¡Cualquier consulta estamos a disposición!`;
+  return `https://wa.me/${tel}?text=${encodeURIComponent(mensaje)}`;
+}
 
 function formatearFecha(valor?: string) {
   if (!valor) {
@@ -277,6 +286,18 @@ export default function OrdenesPage() {
                 Eliminar
               </button>
             </div>
+
+            {orden.estado === "Finalizado" && orden.telefono && orden.telefono !== "-" && (
+              <a
+                href={generarLinkWhatsApp(orden)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-green-500/20 px-3 py-2 text-sm font-semibold text-green-400 transition hover:bg-green-500/30"
+              >
+                <MessageCircle size={16} />
+                Avisar por WhatsApp
+              </a>
+            )}
           </article>
         ))}
       </div>
@@ -337,6 +358,17 @@ export default function OrdenesPage() {
                       >
                         <Trash2 size={18} />
                       </button>
+                      {orden.estado === "Finalizado" && orden.telefono && orden.telefono !== "-" && (
+                        <a
+                          href={generarLinkWhatsApp(orden)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="rounded-xl bg-green-500/20 p-2 text-green-400 transition hover:bg-green-500/30"
+                          title="Avisar al cliente por WhatsApp"
+                        >
+                          <MessageCircle size={18} />
+                        </a>
+                      )}
                     </div>
                   </td>
                 </tr>
