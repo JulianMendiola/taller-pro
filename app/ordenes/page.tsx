@@ -1,4 +1,5 @@
 "use client";
+export const dynamic = "force-dynamic";
 
 import { Edit, Plus, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
