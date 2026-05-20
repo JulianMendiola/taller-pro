@@ -12,6 +12,7 @@ import {
   Car,
   Wrench,
   Receipt,
+  Landmark,
   Menu,
   X,
 } from "lucide-react";
@@ -61,6 +62,12 @@ export default function DashboardLayout({
       nombre: "Órdenes",
       href: "/ordenes",
       icon: Wrench,
+    },
+
+    {
+      nombre: "Caja",
+      href: "/caja",
+      icon: Landmark,
     },
 
     {
