@@ -16,8 +16,10 @@ type Vehiculo = {
   marca: string;
   modelo: string;
   patente: string;
+  telefono?: string | null;
   clientes?: {
     nombre?: string | null;
+    telefono?: string | null;
   } | null;
 };
 
@@ -81,7 +83,9 @@ export default function VehiculosPage() {
         vehiculo.marca,
         vehiculo.modelo,
         vehiculo.patente,
+        vehiculo.telefono || "",
         vehiculo.clientes?.nombre || "",
+        vehiculo.clientes?.telefono || "",
       ]
         .join(" ")
         .toLowerCase()
@@ -111,7 +115,7 @@ export default function VehiculosPage() {
       <div className="mb-6">
         <input
           type="text"
-          placeholder="Buscar marca, modelo, patente o cliente..."
+          placeholder="Buscar patente, marca, modelo o teléfono..."
           value={busqueda}
           onChange={(event) => setBusqueda(event.target.value)}
           className="w-full rounded-2xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-white outline-none md:px-5 md:py-4"
@@ -137,7 +141,7 @@ export default function VehiculosPage() {
                 </p>
               </div>
               <p className="text-sm text-zinc-400">
-                {vehiculo.clientes?.nombre || "-"}
+                {vehiculo.telefono || vehiculo.clientes?.telefono || "-"}
               </p>
             </div>
 
@@ -169,7 +173,7 @@ export default function VehiculosPage() {
                 <th className="p-4 text-left md:p-6">Marca</th>
                 <th className="p-4 text-left md:p-6">Modelo</th>
                 <th className="p-4 text-left md:p-6">Patente</th>
-                <th className="p-4 text-left md:p-6">Cliente</th>
+                <th className="p-4 text-left md:p-6">Teléfono</th>
                 <th className="p-4 text-left md:p-6">Acciones</th>
               </tr>
             </thead>
@@ -187,7 +191,7 @@ export default function VehiculosPage() {
                       {vehiculo.patente}
                     </Link>
                   </td>
-                  <td className="p-4 md:p-6">{vehiculo.clientes?.nombre || "-"}</td>
+                  <td className="p-4 md:p-6">{vehiculo.telefono || vehiculo.clientes?.telefono || "-"}</td>
                   <td className="p-4 md:p-6">
                     <div className="flex gap-2">
                       <button

@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-
 import { supabase } from "@/lib/supabase";
 
 type Cliente = {
@@ -15,6 +14,7 @@ type Vehiculo = {
   marca: string;
   modelo: string;
   patente: string;
+  telefono?: string | null;
 };
 
 type Props = {
@@ -23,11 +23,7 @@ type Props = {
   onSuccess: () => void;
 };
 
-export default function VehiculoFormModal({
-  vehiculo,
-  onClose,
-  onSuccess,
-}: Props) {
+export default function VehiculoFormModal({ vehiculo, onClose, onSuccess }: Props) {
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [clienteId, setClienteId] = useState(
     vehiculo?.cliente_id ? String(vehiculo.cliente_id) : ""
@@ -35,27 +31,22 @@ export default function VehiculoFormModal({
   const [marca, setMarca] = useState(vehiculo?.marca || "");
   const [modelo, setModelo] = useState(vehiculo?.modelo || "");
   const [patente, setPatente] = useState(vehiculo?.patente || "");
+  const [telefono, setTelefono] = useState(vehiculo?.telefono || "");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   async function obtenerClientes() {
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from("clientes")
       .select("id, nombre")
       .order("nombre", { ascending: true });
-
-    if (error) {
-      console.error(error);
-      setError("No se pudieron cargar los clientes.");
-      return;
-    }
 
     setClientes(data || []);
   }
 
   async function guardarVehiculo() {
-    if (!clienteId || !marca.trim() || !modelo.trim() || !patente.trim()) {
-      setError("Completa cliente, marca, modelo y patente.");
+    if (!marca.trim() || !modelo.trim() || !patente.trim()) {
+      setError("Completá marca, modelo y patente.");
       return;
     }
 
@@ -63,10 +54,11 @@ export default function VehiculoFormModal({
     setError("");
 
     const payload = {
-      cliente_id: Number(clienteId),
+      cliente_id: clienteId ? Number(clienteId) : null,
       marca: marca.trim(),
       modelo: modelo.trim(),
       patente: patente.trim().toUpperCase(),
+      telefono: telefono.trim() || null,
     };
 
     const result = vehiculo
@@ -77,7 +69,7 @@ export default function VehiculoFormModal({
 
     if (result.error) {
       console.error(result.error);
-      setError("No se pudo guardar el vehiculo.");
+      setError("No se pudo guardar el vehículo.");
       return;
     }
 
@@ -86,10 +78,7 @@ export default function VehiculoFormModal({
   }
 
   useEffect(() => {
-    const frame = requestAnimationFrame(() => {
-      obtenerClientes();
-    });
-
+    const frame = requestAnimationFrame(() => obtenerClientes());
     return () => cancelAnimationFrame(frame);
   }, []);
 
@@ -98,60 +87,83 @@ export default function VehiculoFormModal({
       <div className="w-full max-w-xl rounded-3xl border border-zinc-800 bg-zinc-950 p-6 md:p-8">
         <div className="mb-6">
           <h2 className="text-2xl font-bold md:text-3xl">
-            {vehiculo ? "Editar vehiculo" : "Nuevo vehiculo"}
+            {vehiculo ? "Editar vehículo" : "Nuevo vehículo"}
           </h2>
           <p className="mt-2 text-sm text-zinc-400">
-            Asocia el vehiculo a un cliente del taller.
+            La patente y el teléfono son lo más importante.
           </p>
         </div>
 
         <div className="space-y-4">
+          {/* PATENTE */}
           <div>
-            <label className="text-sm text-zinc-400">Cliente</label>
-            <select
-              value={clienteId}
-              onChange={(event) => setClienteId(event.target.value)}
-              className="mt-2 w-full rounded-2xl border border-zinc-800 bg-zinc-900 px-4 py-3 outline-none"
-            >
-              <option value="">Seleccionar cliente</option>
-              {clientes.map((cliente) => (
-                <option key={cliente.id} value={cliente.id}>
-                  {cliente.nombre}
-                </option>
-              ))}
-            </select>
+            <label className="text-sm text-zinc-400">Patente</label>
+            <input
+              type="text"
+              value={patente}
+              onChange={(e) => setPatente(e.target.value)}
+              placeholder="Ej: ABC123"
+              className="mt-2 w-full rounded-2xl border border-zinc-800 bg-zinc-900 px-4 py-3 uppercase outline-none"
+            />
           </div>
 
+          {/* MARCA Y MODELO */}
           <div className="grid gap-4 md:grid-cols-2">
             <div>
               <label className="text-sm text-zinc-400">Marca</label>
               <input
                 type="text"
                 value={marca}
-                onChange={(event) => setMarca(event.target.value)}
+                onChange={(e) => setMarca(e.target.value)}
+                placeholder="Ej: Ford"
                 className="mt-2 w-full rounded-2xl border border-zinc-800 bg-zinc-900 px-4 py-3 outline-none"
               />
             </div>
-
             <div>
               <label className="text-sm text-zinc-400">Modelo</label>
               <input
                 type="text"
                 value={modelo}
-                onChange={(event) => setModelo(event.target.value)}
+                onChange={(e) => setModelo(e.target.value)}
+                placeholder="Ej: Focus"
                 className="mt-2 w-full rounded-2xl border border-zinc-800 bg-zinc-900 px-4 py-3 outline-none"
               />
             </div>
           </div>
 
+          {/* TELÉFONO */}
           <div>
-            <label className="text-sm text-zinc-400">Patente</label>
+            <label className="text-sm text-zinc-400">
+              Teléfono{" "}
+              <span className="text-zinc-600">(para avisar por WhatsApp)</span>
+            </label>
             <input
-              type="text"
-              value={patente}
-              onChange={(event) => setPatente(event.target.value)}
-              className="mt-2 w-full rounded-2xl border border-zinc-800 bg-zinc-900 px-4 py-3 uppercase outline-none"
+              type="tel"
+              value={telefono}
+              onChange={(e) => setTelefono(e.target.value)}
+              placeholder="Ej: 5491112345678"
+              className="mt-2 w-full rounded-2xl border border-zinc-800 bg-zinc-900 px-4 py-3 outline-none"
             />
+          </div>
+
+          {/* CLIENTE OPCIONAL */}
+          <div>
+            <label className="text-sm text-zinc-400">
+              Cliente{" "}
+              <span className="text-zinc-600">(opcional)</span>
+            </label>
+            <select
+              value={clienteId}
+              onChange={(e) => setClienteId(e.target.value)}
+              className="mt-2 w-full rounded-2xl border border-zinc-800 bg-zinc-900 px-4 py-3 outline-none"
+            >
+              <option value="">Sin cliente asignado</option>
+              {clientes.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.nombre}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
 

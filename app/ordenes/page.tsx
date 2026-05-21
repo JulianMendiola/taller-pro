@@ -36,6 +36,7 @@ type VehiculoRelacion = {
   patente?: string | null;
   marca?: string | null;
   modelo?: string | null;
+  telefono?: string | null;
   clientes?: ClienteRelacion | ClienteRelacion[] | null;
 };
 
@@ -52,8 +53,12 @@ const estadoStyles: Record<string, string> = {
 
 function generarLinkWhatsApp(orden: Orden): string {
   const tel = orden.telefono.replace(/\D/g, "");
+  const saludo =
+    orden.cliente && orden.cliente !== "-"
+      ? `Hola ${orden.cliente}! 👋`
+      : "Hola! 👋";
   const mensaje =
-    `Hola ${orden.cliente}! 👋 Te avisamos que tu vehículo ` +
+    `${saludo} Te avisamos que tu vehículo ` +
     `*${orden.patente}* (${orden.marca} ${orden.modelo}) ` +
     `ya está listo para retirar. ¡Cualquier consulta estamos a disposición!`;
   return `https://wa.me/${tel}?text=${encodeURIComponent(mensaje)}`;
@@ -115,6 +120,7 @@ export default function OrdenesPage() {
           patente,
           marca,
           modelo,
+          telefono,
           clientes (
             nombre,
             telefono
@@ -146,7 +152,7 @@ export default function OrdenesPage() {
         marca: vehiculo?.marca || "-",
         modelo: vehiculo?.modelo || "-",
         cliente: cliente?.nombre || "-",
-        telefono: cliente?.telefono || "-",
+        telefono: vehiculo?.telefono || cliente?.telefono || "-",
       };
     });
 
