@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { Search, X } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
@@ -55,19 +55,14 @@ export default function OrdenFormModal({ orden, onClose, onSuccess }: Props) {
     orden?.vehiculo_id ? String(orden.vehiculo_id) : ""
   );
   const [busqueda, setBusqueda] = useState("");
-  const [abierto, setAbierto] = useState(false);
   const [descripcion, setDescripcion] = useState(orden?.descripcion || "");
   const [estado, setEstado] = useState(orden?.estado || "Pendiente");
   const [fecha, setFecha] = useState(orden?.fecha?.slice(0, 10) || fechaLocalISO());
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const contenedorRef = useRef<HTMLDivElement>(null);
-
-  // Vehiculo actualmente seleccionado
   const vehiculoSeleccionado = vehiculos.find((v) => String(v.id) === vehiculoId);
 
-  // Vehiculos filtrados por búsqueda
   const vehiculosFiltrados = vehiculos.filter((v) => {
     const texto = busqueda.trim().toLowerCase();
     if (!texto) return true;
@@ -91,26 +86,12 @@ export default function OrdenFormModal({ orden, onClose, onSuccess }: Props) {
   function seleccionarVehiculo(vehiculo: VehiculoOption) {
     setVehiculoId(String(vehiculo.id));
     setBusqueda("");
-    setAbierto(false);
   }
 
   function limpiarSeleccion() {
     setVehiculoId("");
     setBusqueda("");
-    setAbierto(false);
   }
-
-  // Cerrar al hacer click afuera
-  useEffect(() => {
-    function handleClickFuera(e: MouseEvent) {
-      if (contenedorRef.current && !contenedorRef.current.contains(e.target as Node)) {
-        setAbierto(false);
-        setBusqueda("");
-      }
-    }
-    document.addEventListener("mousedown", handleClickFuera);
-    return () => document.removeEventListener("mousedown", handleClickFuera);
-  }, []);
 
   async function guardarOrden() {
     if (!vehiculoId || !descripcion.trim() || !estado || !fecha) {
@@ -163,65 +144,60 @@ export default function OrdenFormModal({ orden, onClose, onSuccess }: Props) {
 
         <div className="space-y-4">
 
-          {/* BUSCADOR DE VEHÍCULO */}
+          {/* SELECTOR DE VEHÍCULO */}
           <div>
             <label className="text-sm text-zinc-400">Vehículo</label>
 
-            <div ref={contenedorRef} className="relative mt-2">
-              {/* Input de búsqueda / selección */}
-              <div className="flex items-center gap-2 rounded-2xl border border-zinc-800 bg-zinc-900 px-4 py-3">
-                <Search size={16} className="shrink-0 text-zinc-500" />
-
-                {vehiculoSeleccionado && !abierto ? (
-                  // Muestra el vehículo seleccionado
-                  <span className="flex-1 text-sm font-semibold">
-                    <span className="text-blue-400">{vehiculoSeleccionado.patente}</span>
-                    {" · "}
-                    {vehiculoSeleccionado.marca} {vehiculoSeleccionado.modelo}
-                    {nombreCliente(vehiculoSeleccionado) && (
-                      <span className="text-zinc-400 font-normal">
-                        {nombreCliente(vehiculoSeleccionado)}
-                      </span>
-                    )}
+            {vehiculoSeleccionado ? (
+              /* Vehículo ya elegido — mostrar chip con X para cambiar */
+              <div className="mt-2 flex items-center gap-3 rounded-2xl border border-blue-500/40 bg-zinc-900 px-4 py-3">
+                <span className="flex-1 text-sm">
+                  <span className="font-bold text-blue-400">
+                    {vehiculoSeleccionado.patente}
                   </span>
-                ) : (
-                  // Input de búsqueda
+                  <span className="text-zinc-300">
+                    {" · "}{vehiculoSeleccionado.marca} {vehiculoSeleccionado.modelo}
+                  </span>
+                  {nombreCliente(vehiculoSeleccionado) && (
+                    <span className="text-zinc-500">
+                      {nombreCliente(vehiculoSeleccionado)}
+                    </span>
+                  )}
+                </span>
+                <button
+                  onClick={limpiarSeleccion}
+                  className="shrink-0 text-zinc-500 hover:text-white transition"
+                  title="Cambiar vehículo"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+            ) : (
+              /* Buscador + lista siempre visible */
+              <div className="mt-2">
+                {/* Input */}
+                <div className="flex items-center gap-2 rounded-2xl border border-zinc-800 bg-zinc-900 px-4 py-3">
+                  <Search size={16} className="shrink-0 text-zinc-500" />
                   <input
                     type="text"
                     value={busqueda}
-                    onChange={(e) => {
-                      setBusqueda(e.target.value);
-                      setAbierto(true);
-                    }}
-                    onFocus={() => setAbierto(true)}
+                    onChange={(e) => setBusqueda(e.target.value)}
                     placeholder="Escribí la patente o el auto..."
                     className="flex-1 bg-transparent text-sm outline-none placeholder:text-zinc-500"
-                    autoFocus={!vehiculoSeleccionado}
+                    autoFocus
                   />
-                )}
+                  {busqueda && (
+                    <button
+                      onClick={() => setBusqueda("")}
+                      className="shrink-0 text-zinc-500 hover:text-white transition"
+                    >
+                      <X size={14} />
+                    </button>
+                  )}
+                </div>
 
-                {/* Botón para abrir/limpiar */}
-                {vehiculoSeleccionado && !abierto ? (
-                  <button
-                    onClick={limpiarSeleccion}
-                    className="shrink-0 text-zinc-500 hover:text-white transition"
-                    title="Cambiar vehículo"
-                  >
-                    <X size={16} />
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => setAbierto(!abierto)}
-                    className="shrink-0 text-zinc-500 hover:text-white transition text-xs"
-                  >
-                    {abierto ? "▲" : "▼"}
-                  </button>
-                )}
-              </div>
-
-              {/* Dropdown de resultados */}
-              {abierto && (
-                <div className="absolute z-10 mt-2 max-h-60 w-full overflow-y-auto rounded-2xl border border-zinc-800 bg-zinc-900 shadow-xl">
+                {/* Lista filtrada — siempre visible */}
+                <div className="mt-2 max-h-52 overflow-y-auto rounded-2xl border border-zinc-800 bg-zinc-900">
                   {vehiculosFiltrados.length === 0 ? (
                     <p className="p-4 text-center text-sm text-zinc-500">
                       No se encontró ningún vehículo
@@ -231,9 +207,9 @@ export default function OrdenFormModal({ orden, onClose, onSuccess }: Props) {
                       <button
                         key={vehiculo.id}
                         onClick={() => seleccionarVehiculo(vehiculo)}
-                        className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm transition hover:bg-zinc-800"
+                        className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm transition hover:bg-zinc-800 border-b border-zinc-800/60 last:border-0"
                       >
-                        <span className="font-bold text-blue-400 w-20 shrink-0">
+                        <span className="w-20 shrink-0 font-bold text-blue-400">
                           {vehiculo.patente}
                         </span>
                         <span className="text-zinc-300">
@@ -248,8 +224,8 @@ export default function OrdenFormModal({ orden, onClose, onSuccess }: Props) {
                     ))
                   )}
                 </div>
-              )}
-            </div>
+              </div>
+            )}
           </div>
 
           {/* TRABAJO */}
