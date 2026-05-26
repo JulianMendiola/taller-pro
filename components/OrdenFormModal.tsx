@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-
+import { useEffect, useRef, useState } from "react";
+import { Search, X } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
 type Orden = {
@@ -37,45 +37,84 @@ function fechaLocalISO(fecha = new Date()) {
   return new Date(fecha.getTime() - offset).toISOString().slice(0, 10);
 }
 
+function nombreCliente(vehiculo: VehiculoOption): string {
+  if (!vehiculo.clientes) return "";
+  const c = Array.isArray(vehiculo.clientes)
+    ? vehiculo.clientes[0]
+    : vehiculo.clientes;
+  return c?.nombre ? ` — ${c.nombre}` : "";
+}
+
+function etiquetaVehiculo(vehiculo: VehiculoOption): string {
+  return `${vehiculo.patente} · ${vehiculo.marca} ${vehiculo.modelo}${nombreCliente(vehiculo)}`;
+}
+
 export default function OrdenFormModal({ orden, onClose, onSuccess }: Props) {
   const [vehiculos, setVehiculos] = useState<VehiculoOption[]>([]);
   const [vehiculoId, setVehiculoId] = useState(
     orden?.vehiculo_id ? String(orden.vehiculo_id) : ""
   );
+  const [busqueda, setBusqueda] = useState("");
+  const [abierto, setAbierto] = useState(false);
   const [descripcion, setDescripcion] = useState(orden?.descripcion || "");
   const [estado, setEstado] = useState(orden?.estado || "Pendiente");
   const [fecha, setFecha] = useState(orden?.fecha?.slice(0, 10) || fechaLocalISO());
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  const contenedorRef = useRef<HTMLDivElement>(null);
+
+  // Vehiculo actualmente seleccionado
+  const vehiculoSeleccionado = vehiculos.find((v) => String(v.id) === vehiculoId);
+
+  // Vehiculos filtrados por búsqueda
+  const vehiculosFiltrados = vehiculos.filter((v) => {
+    const texto = busqueda.trim().toLowerCase();
+    if (!texto) return true;
+    return etiquetaVehiculo(v).toLowerCase().includes(texto);
+  });
+
   async function obtenerVehiculos() {
     const { data, error } = await supabase
       .from("vehiculos")
-      .select(
-        `
-        id,
-        patente,
-        marca,
-        modelo,
-        clientes (
-          nombre
-        )
-      `
-      )
+      .select(`id, patente, marca, modelo, clientes(nombre)`)
       .order("patente", { ascending: true });
 
     if (error) {
       console.error(error);
-      setError("No se pudieron cargar los vehiculos.");
       return;
     }
 
     setVehiculos((data || []) as VehiculoOption[]);
   }
 
+  function seleccionarVehiculo(vehiculo: VehiculoOption) {
+    setVehiculoId(String(vehiculo.id));
+    setBusqueda("");
+    setAbierto(false);
+  }
+
+  function limpiarSeleccion() {
+    setVehiculoId("");
+    setBusqueda("");
+    setAbierto(false);
+  }
+
+  // Cerrar al hacer click afuera
+  useEffect(() => {
+    function handleClickFuera(e: MouseEvent) {
+      if (contenedorRef.current && !contenedorRef.current.contains(e.target as Node)) {
+        setAbierto(false);
+        setBusqueda("");
+      }
+    }
+    document.addEventListener("mousedown", handleClickFuera);
+    return () => document.removeEventListener("mousedown", handleClickFuera);
+  }, []);
+
   async function guardarOrden() {
     if (!vehiculoId || !descripcion.trim() || !estado || !fecha) {
-      setError("Completa vehiculo, trabajo, estado y fecha.");
+      setError("Completá vehículo, trabajo, estado y fecha.");
       return;
     }
 
@@ -106,10 +145,7 @@ export default function OrdenFormModal({ orden, onClose, onSuccess }: Props) {
   }
 
   useEffect(() => {
-    const frame = requestAnimationFrame(() => {
-      obtenerVehiculos();
-    });
-
+    const frame = requestAnimationFrame(() => obtenerVehiculos());
     return () => cancelAnimationFrame(frame);
   }, []);
 
@@ -121,57 +157,124 @@ export default function OrdenFormModal({ orden, onClose, onSuccess }: Props) {
             {orden ? "Editar orden" : "Nueva orden"}
           </h2>
           <p className="mt-2 text-sm text-zinc-400">
-            Registra el trabajo, el vehiculo y el estado actual.
+            Registra el trabajo, el vehículo y el estado actual.
           </p>
         </div>
 
         <div className="space-y-4">
+
+          {/* BUSCADOR DE VEHÍCULO */}
           <div>
-            <label className="text-sm text-zinc-400">Vehiculo</label>
-            <select
-              value={vehiculoId}
-              onChange={(event) => setVehiculoId(event.target.value)}
-              className="mt-2 w-full rounded-2xl border border-zinc-800 bg-zinc-900 px-4 py-3 outline-none"
-            >
-              <option value="">Seleccionar vehiculo</option>
-              {vehiculos.map((vehiculo) => (
-                <option key={vehiculo.id} value={vehiculo.id}>
-                  {vehiculo.patente} - {vehiculo.marca} {vehiculo.modelo}
-                  {Array.isArray(vehiculo.clientes)
-                    ? vehiculo.clientes[0]?.nombre
-                      ? ` - ${vehiculo.clientes[0].nombre}`
-                      : ""
-                    : vehiculo.clientes?.nombre
-                      ? ` - ${vehiculo.clientes.nombre}`
-                      : ""}
-                </option>
-              ))}
-            </select>
+            <label className="text-sm text-zinc-400">Vehículo</label>
+
+            <div ref={contenedorRef} className="relative mt-2">
+              {/* Input de búsqueda / selección */}
+              <div className="flex items-center gap-2 rounded-2xl border border-zinc-800 bg-zinc-900 px-4 py-3">
+                <Search size={16} className="shrink-0 text-zinc-500" />
+
+                {vehiculoSeleccionado && !abierto ? (
+                  // Muestra el vehículo seleccionado
+                  <span className="flex-1 text-sm font-semibold">
+                    <span className="text-blue-400">{vehiculoSeleccionado.patente}</span>
+                    {" · "}
+                    {vehiculoSeleccionado.marca} {vehiculoSeleccionado.modelo}
+                    {nombreCliente(vehiculoSeleccionado) && (
+                      <span className="text-zinc-400 font-normal">
+                        {nombreCliente(vehiculoSeleccionado)}
+                      </span>
+                    )}
+                  </span>
+                ) : (
+                  // Input de búsqueda
+                  <input
+                    type="text"
+                    value={busqueda}
+                    onChange={(e) => {
+                      setBusqueda(e.target.value);
+                      setAbierto(true);
+                    }}
+                    onFocus={() => setAbierto(true)}
+                    placeholder="Escribí la patente o el auto..."
+                    className="flex-1 bg-transparent text-sm outline-none placeholder:text-zinc-500"
+                    autoFocus={!vehiculoSeleccionado}
+                  />
+                )}
+
+                {/* Botón para abrir/limpiar */}
+                {vehiculoSeleccionado && !abierto ? (
+                  <button
+                    onClick={limpiarSeleccion}
+                    className="shrink-0 text-zinc-500 hover:text-white transition"
+                    title="Cambiar vehículo"
+                  >
+                    <X size={16} />
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => setAbierto(!abierto)}
+                    className="shrink-0 text-zinc-500 hover:text-white transition text-xs"
+                  >
+                    {abierto ? "▲" : "▼"}
+                  </button>
+                )}
+              </div>
+
+              {/* Dropdown de resultados */}
+              {abierto && (
+                <div className="absolute z-10 mt-2 max-h-60 w-full overflow-y-auto rounded-2xl border border-zinc-800 bg-zinc-900 shadow-xl">
+                  {vehiculosFiltrados.length === 0 ? (
+                    <p className="p-4 text-center text-sm text-zinc-500">
+                      No se encontró ningún vehículo
+                    </p>
+                  ) : (
+                    vehiculosFiltrados.map((vehiculo) => (
+                      <button
+                        key={vehiculo.id}
+                        onClick={() => seleccionarVehiculo(vehiculo)}
+                        className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm transition hover:bg-zinc-800"
+                      >
+                        <span className="font-bold text-blue-400 w-20 shrink-0">
+                          {vehiculo.patente}
+                        </span>
+                        <span className="text-zinc-300">
+                          {vehiculo.marca} {vehiculo.modelo}
+                          {nombreCliente(vehiculo) && (
+                            <span className="text-zinc-500">
+                              {nombreCliente(vehiculo)}
+                            </span>
+                          )}
+                        </span>
+                      </button>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
           </div>
 
+          {/* TRABAJO */}
           <div>
             <label className="text-sm text-zinc-400">Trabajo</label>
             <textarea
               value={descripcion}
-              onChange={(event) => setDescripcion(event.target.value)}
-              placeholder="Ej: Cambio de aceite, revision de frenos..."
+              onChange={(e) => setDescripcion(e.target.value)}
+              placeholder="Ej: Cambio de aceite, revisión de frenos..."
               rows={4}
               className="mt-2 w-full resize-none rounded-2xl border border-zinc-800 bg-zinc-900 px-4 py-3 outline-none"
             />
           </div>
 
+          {/* ESTADO Y FECHA */}
           <div className="grid gap-4 md:grid-cols-2">
             <div>
               <label className="text-sm text-zinc-400">Estado</label>
               <select
                 value={estado}
-                onChange={(event) => setEstado(event.target.value)}
+                onChange={(e) => setEstado(e.target.value)}
                 className="mt-2 w-full rounded-2xl border border-zinc-800 bg-zinc-900 px-4 py-3 outline-none"
               >
                 {estados.map((item) => (
-                  <option key={item} value={item}>
-                    {item}
-                  </option>
+                  <option key={item} value={item}>{item}</option>
                 ))}
               </select>
             </div>
@@ -181,7 +284,7 @@ export default function OrdenFormModal({ orden, onClose, onSuccess }: Props) {
               <input
                 type="date"
                 value={fecha}
-                onChange={(event) => setFecha(event.target.value)}
+                onChange={(e) => setFecha(e.target.value)}
                 className="mt-2 w-full rounded-2xl border border-zinc-800 bg-zinc-900 px-4 py-3 outline-none"
               />
             </div>
