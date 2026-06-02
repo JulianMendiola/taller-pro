@@ -69,7 +69,12 @@ export default function VehiculoFormModal({ vehiculo, onClose, onSuccess }: Prop
 
     if (result.error) {
       console.error(result.error);
-      setError("No se pudo guardar el vehículo.");
+      // Código 23505 = unique constraint violation (patente duplicada)
+      if (result.error.code === "23505") {
+        setError(`La patente ${patente.trim().toUpperCase()} ya está registrada.`);
+      } else {
+        setError(`Error: ${result.error.message}`);
+      }
       return;
     }
 
