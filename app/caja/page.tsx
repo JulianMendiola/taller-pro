@@ -2,7 +2,7 @@
 export const dynamic = "force-dynamic";
 
 import { useEffect, useMemo, useState } from "react";
-import { Plus, Edit, Trash2 } from "lucide-react";
+import { Download, Edit, Plus, Trash2 } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import ResumenDiarioModal from "@/components/ResumenDiarioModal";
 import ConfirmDeleteModal from "@/components/ConfirmDeleteModal";
@@ -71,6 +71,40 @@ export default function CajaPage() {
     obtenerResumenes();
   }
 
+  function exportarExcel() {
+    if (resumenes.length === 0) {
+      alert("No hay registros para exportar en este mes.");
+      return;
+    }
+
+    const escapar = (v: string | number) => `"${String(v).replaceAll('"', '""')}"`;
+    const encabezados = ["Fecha", "Entró", "Salió", "Ganancia del día"];
+    const filas = resumenes.map((r) => {
+      const [anio, mes, dia] = r.fecha.slice(0, 10).split("-");
+      const gan = Number(r.ingreso) - Number(r.egreso);
+      return [
+        `${dia}/${mes}/${anio}`,
+        Number(r.ingreso),
+        Number(r.egreso),
+        gan,
+      ];
+    });
+
+    const contenido = [encabezados, ...filas]
+      .map((fila) => fila.map(escapar).join(";"))
+      .join("\n");
+
+    const blob = new Blob([`﻿${contenido}`], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `caja-${anio}-${String(mes + 1).padStart(2, "0")}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }
+
   function cambiarMes(delta: number) {
     let nuevoMes = mes + delta;
     let nuevoAnio = anio;
@@ -100,13 +134,22 @@ export default function CajaPage() {
             Resumen diario de entradas y salidas
           </p>
         </div>
-        <button
-          onClick={() => setMostrarModal(true)}
-          className="flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-500 px-5 py-3 font-semibold transition hover:bg-blue-600 md:w-auto"
-        >
-          <Plus size={20} />
-          Cargar día
-        </button>
+        <div className="flex w-full gap-3 md:w-auto">
+          <button
+            onClick={exportarExcel}
+            className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-zinc-800 px-5 py-3 font-semibold transition hover:bg-zinc-700 md:flex-none"
+          >
+            <Download size={18} />
+            Exportar
+          </button>
+          <button
+            onClick={() => setMostrarModal(true)}
+            className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-blue-500 px-5 py-3 font-semibold transition hover:bg-blue-600 md:flex-none"
+          >
+            <Plus size={20} />
+            Cargar día
+          </button>
+        </div>
       </div>
 
       {/* SELECTOR DE MES */}

@@ -10,7 +10,6 @@ import {
   LayoutDashboard,
   Users,
   Car,
-  Receipt,
   Landmark,
   Menu,
   X,
@@ -61,12 +60,6 @@ export default function DashboardLayout({
       nombre: "Caja",
       href: "/caja",
       icon: Landmark,
-    },
-
-    {
-      nombre: "Gastos",
-      href: "/gastos",
-      icon: Receipt,
     },
 
   ];
