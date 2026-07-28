@@ -41,9 +41,13 @@ function formatearFecha(valor?: string) {
   return dia && mes && anio ? `${dia}/${mes}/${anio}` : valor;
 }
 
-function generarWhatsApp(telefono: string): string {
-  const tel = telefono.replace(/\D/g, "");
-  return `https://wa.me/${tel}`;
+function generarWhatsApp(vehiculo: Vehiculo): string {
+  const tel = (vehiculo.telefono || "").replace(/\D/g, "");
+  const mensaje =
+    `Hola! 👋 Te avisamos que tu vehículo ` +
+    `*${vehiculo.patente}* (${vehiculo.modelo}) ` +
+    `ya está listo para retirar. ¡Cualquier consulta estamos a disposición!`;
+  return `https://wa.me/${tel}?text=${encodeURIComponent(mensaje)}`;
 }
 
 export default function VehiculosPage() {
@@ -174,7 +178,7 @@ export default function VehiculosPage() {
               <div className="flex items-center gap-2 shrink-0">
                 {vehiculo.telefono && (
                   <a
-                    href={generarWhatsApp(vehiculo.telefono)}
+                    href={generarWhatsApp(vehiculo)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="rounded-xl bg-green-500/20 p-2 text-green-400 transition hover:bg-green-500/30"
