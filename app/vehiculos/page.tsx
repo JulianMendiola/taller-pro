@@ -1,95 +1,122 @@
 "use client";
 export const dynamic = "force-dynamic";
 
-import { Edit, Plus, Trash2 } from "lucide-react";
-import Link from "next/link";
+import { Edit, MessageCircle, Plus, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 
 import ConfirmDeleteModal from "@/components/ConfirmDeleteModal";
 import DashboardLayout from "@/components/DashboardLayout";
+import NuevoTrabajoModal from "@/components/NuevoTrabajoModal";
 import VehiculoFormModal from "@/components/VehiculoFormModal";
 import { supabase } from "@/lib/supabase";
 
-type Vehiculo = {
+type Trabajo = {
   id: number;
-  cliente_id?: number | null;
-  marca: string;
-  modelo: string;
-  patente: string;
-  telefono?: string | null;
-  clientes?: {
-    nombre?: string | null;
-    telefono?: string | null;
-  } | null;
+  descripcion: string;
+  fecha: string;
 };
 
+type Vehiculo = {
+  id: number;
+  patente: string;
+  modelo: string;
+  telefono?: string | null;
+  trabajos: Trabajo[];
+};
+
+type VehiculoRow = {
+  id: number;
+  patente: string;
+  marca?: string | null;
+  modelo: string;
+  telefono?: string | null;
+  clientes?: { telefono?: string | null } | { telefono?: string | null }[] | null;
+  ordenes_trabajo?: { id: number; descripcion: string; fecha: string }[] | null;
+};
+
+function formatearFecha(valor?: string) {
+  if (!valor) return "-";
+  const [anio, mes, dia] = valor.slice(0, 10).split("-");
+  return dia && mes && anio ? `${dia}/${mes}/${anio}` : valor;
+}
+
+function generarWhatsApp(telefono: string): string {
+  const tel = telefono.replace(/\D/g, "");
+  return `https://wa.me/${tel}`;
+}
+
 export default function VehiculosPage() {
+  const router = useRouter();
   const [vehiculos, setVehiculos] = useState<Vehiculo[]>([]);
-  const [mostrarModal, setMostrarModal] = useState(false);
+  const [busqueda, setBusqueda] = useState("");
+  const [loading, setLoading] = useState(true);
+
+  const [mostrarModalVehiculo, setMostrarModalVehiculo] = useState(false);
   const [vehiculoEditar, setVehiculoEditar] = useState<Vehiculo | null>(null);
   const [vehiculoEliminar, setVehiculoEliminar] = useState<Vehiculo | null>(null);
-  const [busqueda, setBusqueda] = useState("");
+  const [vehiculoTrabajo, setVehiculoTrabajo] = useState<Vehiculo | null>(null);
+  const [trabajoEliminar, setTrabajoEliminar] = useState<{ id: number; patente: string } | null>(null);
+
+  async function verificarSesion() {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) { router.push("/login"); return; }
+    obtenerVehiculos();
+  }
 
   async function obtenerVehiculos() {
+    setLoading(true);
+
     const { data, error } = await supabase
       .from("vehiculos")
-      .select(
-        `
-        *,
-        clientes (
-          nombre
-        )
-      `
-      )
+      .select(`
+        id, patente, marca, modelo, telefono,
+        clientes ( telefono ),
+        ordenes_trabajo ( id, descripcion, fecha )
+      `)
       .order("id", { ascending: false });
 
-    if (error) {
-      console.error(error);
-      return;
-    }
+    setLoading(false);
+    if (error) { console.error(error); return; }
 
-    setVehiculos((data || []) as Vehiculo[]);
+    const transformados: Vehiculo[] = ((data || []) as VehiculoRow[]).map((v) => {
+      const telCliente = Array.isArray(v.clientes) ? v.clientes[0]?.telefono : v.clientes?.telefono;
+      const trabajos = (v.ordenes_trabajo || [])
+        .slice()
+        .sort((a, b) => b.fecha.localeCompare(a.fecha));
+
+      return {
+        id: v.id,
+        patente: v.patente,
+        modelo: v.modelo,
+        telefono: v.telefono || telCliente || null,
+        trabajos,
+      };
+    });
+
+    setVehiculos(transformados);
+  }
+
+  async function eliminarTrabajo(id: number) {
+    await supabase.from("ordenes_trabajo").delete().eq("id", id);
+    setTrabajoEliminar(null);
+    obtenerVehiculos();
   }
 
   async function eliminarVehiculo(id: number) {
-    const { error } = await supabase.from("vehiculos").delete().eq("id", id);
-
-    if (error) {
-      console.error(error);
-      return;
-    }
-
+    await supabase.from("vehiculos").delete().eq("id", id);
     setVehiculoEliminar(null);
     obtenerVehiculos();
   }
 
-  useEffect(() => {
-    const frame = requestAnimationFrame(() => {
-      obtenerVehiculos();
-    });
-
-    return () => cancelAnimationFrame(frame);
-  }, []);
+  useEffect(() => { verificarSesion(); }, []);
 
   const vehiculosFiltrados = useMemo(() => {
     const texto = busqueda.trim().toLowerCase();
-
-    if (!texto) {
-      return vehiculos;
-    }
-
-    return vehiculos.filter((vehiculo) =>
-      [
-        vehiculo.marca,
-        vehiculo.modelo,
-        vehiculo.patente,
-        vehiculo.telefono || "",
-        vehiculo.clientes?.nombre || "",
-        vehiculo.clientes?.telefono || "",
-      ]
-        .join(" ")
-        .toLowerCase()
-        .includes(texto)
+    if (!texto) return vehiculos;
+    return vehiculos.filter((v) =>
+      [v.patente, v.modelo, v.telefono || "", ...v.trabajos.map((t) => t.descripcion)]
+        .join(" ").toLowerCase().includes(texto)
     );
   }, [busqueda, vehiculos]);
 
@@ -97,145 +124,156 @@ export default function VehiculosPage() {
     <DashboardLayout>
       <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-3xl font-bold md:text-5xl">Vehiculos</h1>
+          <h1 className="text-3xl font-bold md:text-5xl">Vehículos y Trabajos</h1>
           <p className="mt-2 text-sm text-zinc-400 md:text-base">
-            Gestion de vehiculos del taller
+            Todos los autos y los trabajos realizados en cada uno.
           </p>
         </div>
-
         <button
-          onClick={() => setMostrarModal(true)}
+          onClick={() => setMostrarModalVehiculo(true)}
           className="flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-500 px-5 py-3 font-semibold transition hover:bg-blue-600 md:w-auto"
         >
           <Plus size={20} />
-          Nuevo vehiculo
+          Nuevo vehículo
         </button>
       </div>
 
       <div className="mb-6">
         <input
           type="text"
-          placeholder="Buscar patente, marca, modelo o teléfono..."
+          placeholder="Buscar patente, modelo, teléfono o trabajo..."
           value={busqueda}
-          onChange={(event) => setBusqueda(event.target.value)}
+          onChange={(e) => setBusqueda(e.target.value)}
           className="w-full rounded-2xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-white outline-none md:px-5 md:py-4"
         />
       </div>
 
-      <div className="space-y-3 md:hidden">
+      {!loading && vehiculosFiltrados.length === 0 && (
+        <div className="rounded-3xl border border-zinc-800 bg-zinc-900 p-6 text-center text-zinc-400">
+          No hay vehículos para mostrar.
+        </div>
+      )}
+
+      <div className="space-y-4">
         {vehiculosFiltrados.map((vehiculo) => (
-          <article
+          <div
             key={vehiculo.id}
-            className="rounded-3xl border border-zinc-800 bg-zinc-900 p-4"
+            className="rounded-3xl border border-zinc-800 bg-zinc-900 overflow-hidden"
           >
-            <div className="mb-3 flex items-start justify-between gap-3">
-              <div>
-                <Link
-                  href={`/vehiculos/${vehiculo.id}`}
-                  className="font-semibold text-blue-400 hover:underline"
-                >
-                  {vehiculo.patente}
-                </Link>
-                <p className="text-sm text-zinc-400">
-                  {vehiculo.marca} {vehiculo.modelo}
-                </p>
+            {/* Cabecera del vehículo */}
+            <div className="flex items-center gap-3 p-4 md:p-5">
+              <div className="flex-1 min-w-0">
+                <p className="text-xl font-bold text-blue-400">{vehiculo.patente}</p>
+                <p className="text-sm text-zinc-300">{vehiculo.modelo}</p>
+                {vehiculo.telefono && (
+                  <p className="text-sm text-zinc-500 mt-0.5">{vehiculo.telefono}</p>
+                )}
               </div>
-              <p className="text-sm text-zinc-400">
-                {vehiculo.telefono || vehiculo.clientes?.telefono || "-"}
-              </p>
+
+              <div className="flex items-center gap-2 shrink-0">
+                {vehiculo.telefono && (
+                  <a
+                    href={generarWhatsApp(vehiculo.telefono)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="rounded-xl bg-green-500/20 p-2 text-green-400 transition hover:bg-green-500/30"
+                    title="WhatsApp"
+                  >
+                    <MessageCircle size={18} />
+                  </a>
+                )}
+                <button
+                  onClick={() => setVehiculoEditar(vehiculo)}
+                  className="rounded-xl bg-yellow-500/20 p-2 text-yellow-400 transition hover:bg-yellow-500/30"
+                  title="Editar vehículo"
+                >
+                  <Edit size={18} />
+                </button>
+                <button
+                  onClick={() => setVehiculoEliminar(vehiculo)}
+                  className="rounded-xl bg-red-500/20 p-2 text-red-400 transition hover:bg-red-500/30"
+                  title="Eliminar vehículo"
+                >
+                  <Trash2 size={18} />
+                </button>
+              </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                onClick={() => setVehiculoEditar(vehiculo)}
-                className="flex items-center justify-center gap-2 rounded-xl bg-yellow-500/20 px-3 py-2 text-sm font-semibold text-yellow-400"
-              >
-                <Edit size={16} />
-                Editar
-              </button>
-              <button
-                onClick={() => setVehiculoEliminar(vehiculo)}
-                className="flex items-center justify-center gap-2 rounded-xl bg-red-500/20 px-3 py-2 text-sm font-semibold text-red-400"
-              >
-                <Trash2 size={16} />
-                Eliminar
-              </button>
+            {/* Trabajos */}
+            <div className="border-t border-zinc-800">
+              {vehiculo.trabajos.length === 0 ? (
+                <p className="px-4 py-3 text-sm text-zinc-600 md:px-5">Sin trabajos registrados.</p>
+              ) : (
+                <div className="divide-y divide-zinc-800">
+                  {vehiculo.trabajos.map((trabajo) => (
+                    <div key={trabajo.id} className="flex items-start gap-3 px-4 py-3 md:px-5">
+                      <span className="shrink-0 text-xs text-zinc-500 mt-0.5 w-20">
+                        {formatearFecha(trabajo.fecha)}
+                      </span>
+                      <span className="flex-1 text-sm text-zinc-200">{trabajo.descripcion}</span>
+                      <button
+                        onClick={() => setTrabajoEliminar({ id: trabajo.id, patente: vehiculo.patente })}
+                        className="shrink-0 text-zinc-600 hover:text-red-400 transition"
+                        title="Eliminar trabajo"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="px-4 py-3 md:px-5">
+                <button
+                  onClick={() => setVehiculoTrabajo(vehiculo)}
+                  className="flex items-center gap-2 rounded-xl border border-dashed border-zinc-700 px-4 py-2 text-sm text-zinc-400 transition hover:border-blue-500 hover:text-blue-400"
+                >
+                  <Plus size={14} />
+                  Agregar trabajo
+                </button>
+              </div>
             </div>
-          </article>
+          </div>
         ))}
       </div>
 
-      <div className="hidden overflow-hidden rounded-3xl border border-zinc-800 bg-zinc-900 md:block">
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[820px]">
-            <thead className="border-b border-zinc-800 text-zinc-400">
-              <tr>
-                <th className="p-4 text-left md:p-6">Marca</th>
-                <th className="p-4 text-left md:p-6">Modelo</th>
-                <th className="p-4 text-left md:p-6">Patente</th>
-                <th className="p-4 text-left md:p-6">Teléfono</th>
-                <th className="p-4 text-left md:p-6">Acciones</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {vehiculosFiltrados.map((vehiculo) => (
-                <tr
-                  key={vehiculo.id}
-                  className="border-b border-zinc-800 transition hover:bg-zinc-800/40"
-                >
-                  <td className="p-4 font-semibold md:p-6">{vehiculo.marca}</td>
-                  <td className="p-4 md:p-6">{vehiculo.modelo}</td>
-                  <td className="p-4 font-semibold text-blue-400 md:p-6">
-                    <Link href={`/vehiculos/${vehiculo.id}`} className="hover:underline">
-                      {vehiculo.patente}
-                    </Link>
-                  </td>
-                  <td className="p-4 md:p-6">{vehiculo.telefono || vehiculo.clientes?.telefono || "-"}</td>
-                  <td className="p-4 md:p-6">
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => setVehiculoEditar(vehiculo)}
-                        className="rounded-xl bg-yellow-500/20 p-2 text-yellow-400 transition hover:bg-yellow-500/30"
-                        title="Editar vehiculo"
-                      >
-                        <Edit size={18} />
-                      </button>
-                      <button
-                        onClick={() => setVehiculoEliminar(vehiculo)}
-                        className="rounded-xl bg-red-500/20 p-2 text-red-400 transition hover:bg-red-500/30"
-                        title="Eliminar vehiculo"
-                      >
-                        <Trash2 size={18} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {mostrarModal && (
+      {mostrarModalVehiculo && (
         <VehiculoFormModal
-          onClose={() => setMostrarModal(false)}
+          onClose={() => setMostrarModalVehiculo(false)}
           onSuccess={obtenerVehiculos}
         />
       )}
 
       {vehiculoEditar && (
         <VehiculoFormModal
-          vehiculo={vehiculoEditar}
+          vehiculo={vehiculoEditar as any}
           onClose={() => setVehiculoEditar(null)}
           onSuccess={obtenerVehiculos}
         />
       )}
 
+      {vehiculoTrabajo && (
+        <NuevoTrabajoModal
+          vehiculoId={vehiculoTrabajo.id}
+          patente={vehiculoTrabajo.patente}
+          onClose={() => setVehiculoTrabajo(null)}
+          onSuccess={obtenerVehiculos}
+        />
+      )}
+
+      {trabajoEliminar && (
+        <ConfirmDeleteModal
+          title="Eliminar trabajo"
+          message={`Vas a eliminar este trabajo de ${trabajoEliminar.patente}. Esta acción no se puede deshacer.`}
+          onClose={() => setTrabajoEliminar(null)}
+          onConfirm={() => eliminarTrabajo(trabajoEliminar.id)}
+        />
+      )}
+
       {vehiculoEliminar && (
         <ConfirmDeleteModal
-          title="Eliminar vehiculo"
-          message={`Vas a eliminar ${vehiculoEliminar.patente}. Esta accion no se puede deshacer.`}
+          title="Eliminar vehículo"
+          message={`Vas a eliminar ${vehiculoEliminar.patente} y todos sus trabajos. Esta acción no se puede deshacer.`}
           onClose={() => setVehiculoEliminar(null)}
           onConfirm={() => eliminarVehiculo(vehiculoEliminar.id)}
         />

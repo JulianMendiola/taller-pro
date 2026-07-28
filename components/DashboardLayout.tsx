@@ -10,7 +10,6 @@ import {
   LayoutDashboard,
   Users,
   Car,
-  Wrench,
   Receipt,
   Landmark,
   Menu,
@@ -53,15 +52,9 @@ export default function DashboardLayout({
     },
 
     {
-      nombre: "Vehículos",
+      nombre: "Vehículos y Trabajos",
       href: "/vehiculos",
       icon: Car,
-    },
-
-    {
-      nombre: "Órdenes",
-      href: "/ordenes",
-      icon: Wrench,
     },
 
     {
