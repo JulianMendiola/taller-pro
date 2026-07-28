@@ -254,8 +254,9 @@ export default function OrdenesPage() {
           >
             <div className="mb-3 flex items-start justify-between gap-3">
               <div>
-                <p className="font-semibold text-blue-400">{orden.patente}</p>
-                <p className="text-sm text-zinc-400">
+                <p className="text-xs text-zinc-500 mb-1">{formatearFecha(orden.fecha)}</p>
+                <p className="font-bold text-blue-400 text-lg leading-tight">{orden.patente}</p>
+                <p className="text-sm font-medium text-zinc-300">
                   {orden.marca} {orden.modelo}
                 </p>
               </div>
@@ -271,9 +272,6 @@ export default function OrdenesPage() {
             <p className="font-semibold">{orden.descripcion}</p>
             <p className="mt-2 text-sm text-zinc-400">
               {orden.cliente} - {orden.telefono}
-            </p>
-            <p className="mt-1 text-sm text-zinc-500">
-              Fecha: {formatearFecha(orden.fecha)}
             </p>
 
             <div className="mt-4 grid grid-cols-2 gap-2">
@@ -313,11 +311,11 @@ export default function OrdenesPage() {
           <table className="w-full min-w-[1000px]">
             <thead className="border-b border-zinc-800 text-zinc-400">
               <tr>
+                <th className="p-4 text-left md:p-6">Fecha</th>
                 <th className="p-4 text-left md:p-6">Vehiculo</th>
                 <th className="p-4 text-left md:p-6">Cliente</th>
                 <th className="p-4 text-left md:p-6">Telefono</th>
                 <th className="p-4 text-left md:p-6">Trabajo</th>
-                <th className="p-4 text-left md:p-6">Fecha</th>
                 <th className="p-4 text-left md:p-6">Estado</th>
                 <th className="p-4 text-left md:p-6">Acciones</th>
               </tr>
@@ -329,16 +327,16 @@ export default function OrdenesPage() {
                   key={orden.id}
                   className="border-b border-zinc-800 transition hover:bg-zinc-800/40"
                 >
+                  <td className="p-4 md:p-6 text-zinc-300 whitespace-nowrap">{formatearFecha(orden.fecha)}</td>
                   <td className="p-4 md:p-6">
-                    <div className="font-semibold text-blue-400">{orden.patente}</div>
-                    <div className="text-sm text-zinc-400">
+                    <div className="font-bold text-blue-400 text-base">{orden.patente}</div>
+                    <div className="text-sm text-zinc-300 font-medium">
                       {orden.marca} {orden.modelo}
                     </div>
                   </td>
                   <td className="p-4 md:p-6">{orden.cliente}</td>
                   <td className="p-4 md:p-6">{orden.telefono}</td>
                   <td className="p-4 font-semibold md:p-6">{orden.descripcion}</td>
-                  <td className="p-4 md:p-6">{formatearFecha(orden.fecha)}</td>
                   <td className="p-4 md:p-6">
                     <span
                       className={`rounded-xl px-3 py-2 text-xs font-semibold md:text-sm ${
