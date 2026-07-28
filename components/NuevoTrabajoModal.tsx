@@ -4,9 +4,16 @@ import { useState } from "react";
 import { X } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
+type Trabajo = {
+  id: number;
+  descripcion: string;
+  fecha: string;
+};
+
 type Props = {
   vehiculoId: number;
   patente: string;
+  trabajo?: Trabajo | null;
   onClose: () => void;
   onSuccess: () => void;
 };
@@ -16,9 +23,9 @@ function fechaLocalISO(fecha = new Date()) {
   return new Date(fecha.getTime() - offset).toISOString().slice(0, 10);
 }
 
-export default function NuevoTrabajoModal({ vehiculoId, patente, onClose, onSuccess }: Props) {
-  const [descripcion, setDescripcion] = useState("");
-  const [fecha, setFecha] = useState(fechaLocalISO());
+export default function NuevoTrabajoModal({ vehiculoId, patente, trabajo, onClose, onSuccess }: Props) {
+  const [descripcion, setDescripcion] = useState(trabajo?.descripcion || "");
+  const [fecha, setFecha] = useState(trabajo?.fecha?.slice(0, 10) || fechaLocalISO());
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -31,16 +38,15 @@ export default function NuevoTrabajoModal({ vehiculoId, patente, onClose, onSucc
     setLoading(true);
     setError("");
 
-    const { error } = await supabase.from("ordenes_trabajo").insert({
-      vehiculo_id: vehiculoId,
-      descripcion: descripcion.trim(),
-      estado: "Finalizado",
-      fecha,
-    });
+    const payload = { descripcion: descripcion.trim(), fecha };
+
+    const result = trabajo
+      ? await supabase.from("ordenes_trabajo").update(payload).eq("id", trabajo.id)
+      : await supabase.from("ordenes_trabajo").insert({ ...payload, vehiculo_id: vehiculoId, estado: "Finalizado" });
 
     setLoading(false);
 
-    if (error) {
+    if (result.error) {
       setError("No se pudo guardar el trabajo.");
       return;
     }
@@ -54,7 +60,7 @@ export default function NuevoTrabajoModal({ vehiculoId, patente, onClose, onSucc
       <div className="w-full max-w-md rounded-3xl border border-zinc-800 bg-zinc-950 p-6">
         <div className="mb-5 flex items-start justify-between gap-3">
           <div>
-            <h2 className="text-xl font-bold">Nuevo trabajo</h2>
+            <h2 className="text-xl font-bold">{trabajo ? "Editar trabajo" : "Nuevo trabajo"}</h2>
             <p className="text-sm text-zinc-400">{patente}</p>
           </div>
           <button onClick={onClose} className="text-zinc-500 hover:text-white transition">
@@ -88,10 +94,7 @@ export default function NuevoTrabajoModal({ vehiculoId, patente, onClose, onSucc
         {error && <p className="mt-3 text-sm text-red-400">{error}</p>}
 
         <div className="mt-6 flex gap-3">
-          <button
-            onClick={onClose}
-            className="flex-1 rounded-2xl bg-zinc-800 py-3 transition hover:bg-zinc-700"
-          >
+          <button onClick={onClose} className="flex-1 rounded-2xl bg-zinc-800 py-3 transition hover:bg-zinc-700">
             Cancelar
           </button>
           <button

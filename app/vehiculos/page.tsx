@@ -1,7 +1,7 @@
 "use client";
 export const dynamic = "force-dynamic";
 
-import { Edit, MessageCircle, Plus, Trash2 } from "lucide-react";
+import { Edit, MessageCircle, Pencil, Plus, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
@@ -56,6 +56,7 @@ export default function VehiculosPage() {
   const [vehiculoEditar, setVehiculoEditar] = useState<Vehiculo | null>(null);
   const [vehiculoEliminar, setVehiculoEliminar] = useState<Vehiculo | null>(null);
   const [vehiculoTrabajo, setVehiculoTrabajo] = useState<Vehiculo | null>(null);
+  const [trabajoEditar, setTrabajoEditar] = useState<{ trabajo: Trabajo; vehiculo: Vehiculo } | null>(null);
   const [trabajoEliminar, setTrabajoEliminar] = useState<{ id: number; patente: string } | null>(null);
 
   async function verificarSesion() {
@@ -212,6 +213,13 @@ export default function VehiculosPage() {
                       </span>
                       <span className="flex-1 text-sm text-zinc-200">{trabajo.descripcion}</span>
                       <button
+                        onClick={() => setTrabajoEditar({ trabajo, vehiculo })}
+                        className="shrink-0 text-zinc-600 hover:text-yellow-400 transition"
+                        title="Editar trabajo"
+                      >
+                        <Pencil size={14} />
+                      </button>
+                      <button
                         onClick={() => setTrabajoEliminar({ id: trabajo.id, patente: vehiculo.patente })}
                         className="shrink-0 text-zinc-600 hover:text-red-400 transition"
                         title="Eliminar trabajo"
@@ -257,6 +265,16 @@ export default function VehiculosPage() {
           vehiculoId={vehiculoTrabajo.id}
           patente={vehiculoTrabajo.patente}
           onClose={() => setVehiculoTrabajo(null)}
+          onSuccess={obtenerVehiculos}
+        />
+      )}
+
+      {trabajoEditar && (
+        <NuevoTrabajoModal
+          vehiculoId={trabajoEditar.vehiculo.id}
+          patente={trabajoEditar.vehiculo.patente}
+          trabajo={trabajoEditar.trabajo}
+          onClose={() => setTrabajoEditar(null)}
           onSuccess={obtenerVehiculos}
         />
       )}
