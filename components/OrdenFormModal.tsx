@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Search, X } from "lucide-react";
+import { Plus, Search, X } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
 type Orden = {
@@ -61,6 +61,15 @@ export default function OrdenFormModal({ orden, onClose, onSuccess }: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  // Nuevo vehículo inline
+  const [mostrarFormVehiculo, setMostrarFormVehiculo] = useState(false);
+  const [nuevoPatente, setNuevoPatente] = useState("");
+  const [nuevoMarca, setNuevoMarca] = useState("");
+  const [nuevoModelo, setNuevoModelo] = useState("");
+  const [nuevoTelefono, setNuevoTelefono] = useState("");
+  const [loadingVehiculo, setLoadingVehiculo] = useState(false);
+  const [errorVehiculo, setErrorVehiculo] = useState("");
+
   const vehiculoSeleccionado = vehiculos.find((v) => String(v.id) === vehiculoId);
 
   const vehiculosFiltrados = vehiculos.filter((v) => {
@@ -91,6 +100,46 @@ export default function OrdenFormModal({ orden, onClose, onSuccess }: Props) {
   function limpiarSeleccion() {
     setVehiculoId("");
     setBusqueda("");
+  }
+
+  async function crearVehiculo() {
+    if (!nuevoPatente.trim() || !nuevoMarca.trim() || !nuevoModelo.trim()) {
+      setErrorVehiculo("Completá patente, marca y modelo.");
+      return;
+    }
+
+    setLoadingVehiculo(true);
+    setErrorVehiculo("");
+
+    const { data, error } = await supabase
+      .from("vehiculos")
+      .insert({
+        patente: nuevoPatente.trim().toUpperCase(),
+        marca: nuevoMarca.trim(),
+        modelo: nuevoModelo.trim(),
+        telefono: nuevoTelefono.trim() || null,
+      })
+      .select("id, patente, marca, modelo")
+      .single();
+
+    setLoadingVehiculo(false);
+
+    if (error) {
+      if (error.code === "23505") {
+        setErrorVehiculo("Ya existe un vehículo con esa patente.");
+      } else {
+        setErrorVehiculo("No se pudo crear el vehículo.");
+      }
+      return;
+    }
+
+    await obtenerVehiculos();
+    setVehiculoId(String(data.id));
+    setMostrarFormVehiculo(false);
+    setNuevoPatente("");
+    setNuevoMarca("");
+    setNuevoModelo("");
+    setNuevoTelefono("");
   }
 
   async function guardarOrden() {
@@ -224,6 +273,81 @@ export default function OrdenFormModal({ orden, onClose, onSuccess }: Props) {
                     ))
                   )}
                 </div>
+
+                {/* Botón / formulario nuevo vehículo */}
+                {!mostrarFormVehiculo ? (
+                  <button
+                    onClick={() => setMostrarFormVehiculo(true)}
+                    className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-zinc-700 py-3 text-sm text-zinc-400 transition hover:border-blue-500 hover:text-blue-400"
+                  >
+                    <Plus size={16} />
+                    Nuevo vehículo
+                  </button>
+                ) : (
+                  <div className="mt-3 rounded-2xl border border-zinc-700 bg-zinc-900 p-4 space-y-3">
+                    <p className="text-sm font-semibold text-zinc-300">Nuevo vehículo</p>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-xs text-zinc-500">Patente *</label>
+                        <input
+                          type="text"
+                          value={nuevoPatente}
+                          onChange={(e) => setNuevoPatente(e.target.value.toUpperCase())}
+                          placeholder="ABC123"
+                          className="mt-1 w-full rounded-xl border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm uppercase outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs text-zinc-500">Teléfono</label>
+                        <input
+                          type="text"
+                          value={nuevoTelefono}
+                          onChange={(e) => setNuevoTelefono(e.target.value)}
+                          placeholder="Opcional"
+                          className="mt-1 w-full rounded-xl border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs text-zinc-500">Marca *</label>
+                        <input
+                          type="text"
+                          value={nuevoMarca}
+                          onChange={(e) => setNuevoMarca(e.target.value)}
+                          placeholder="Ford"
+                          className="mt-1 w-full rounded-xl border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs text-zinc-500">Modelo *</label>
+                        <input
+                          type="text"
+                          value={nuevoModelo}
+                          onChange={(e) => setNuevoModelo(e.target.value)}
+                          placeholder="Focus"
+                          className="mt-1 w-full rounded-xl border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm outline-none"
+                        />
+                      </div>
+                    </div>
+                    {errorVehiculo && (
+                      <p className="text-xs text-red-400">{errorVehiculo}</p>
+                    )}
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => { setMostrarFormVehiculo(false); setErrorVehiculo(""); }}
+                        className="flex-1 rounded-xl bg-zinc-800 py-2 text-sm transition hover:bg-zinc-700"
+                      >
+                        Cancelar
+                      </button>
+                      <button
+                        onClick={crearVehiculo}
+                        disabled={loadingVehiculo}
+                        className="flex-1 rounded-xl bg-blue-500 py-2 text-sm font-semibold transition hover:bg-blue-600 disabled:opacity-60"
+                      >
+                        {loadingVehiculo ? "Creando..." : "Crear y seleccionar"}
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
