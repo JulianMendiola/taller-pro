@@ -15,6 +15,7 @@ type Vehiculo = {
   modelo: string;
   patente: string;
   telefono?: string | null;
+  fecha?: string | null;
 };
 
 type Props = {
@@ -32,6 +33,7 @@ export default function VehiculoFormModal({ vehiculo, onClose, onSuccess }: Prop
   const [modelo, setModelo] = useState(vehiculo?.modelo || "");
   const [patente, setPatente] = useState(vehiculo?.patente || "");
   const [telefono, setTelefono] = useState(vehiculo?.telefono || "");
+  const [fecha, setFecha] = useState(vehiculo?.fecha?.slice(0, 10) || "");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -59,6 +61,7 @@ export default function VehiculoFormModal({ vehiculo, onClose, onSuccess }: Prop
       modelo: modelo.trim(),
       patente: patente.trim().toUpperCase(),
       telefono: telefono.trim() || null,
+      fecha: fecha || null,
     };
 
     const result = vehiculo
@@ -147,6 +150,17 @@ export default function VehiculoFormModal({ vehiculo, onClose, onSuccess }: Prop
               value={telefono}
               onChange={(e) => setTelefono(e.target.value)}
               placeholder="Ej: 5491112345678"
+              className="mt-2 w-full rounded-2xl border border-zinc-800 bg-zinc-900 px-4 py-3 outline-none"
+            />
+          </div>
+
+          {/* FECHA */}
+          <div>
+            <label className="text-sm text-zinc-400">Fecha de ingreso</label>
+            <input
+              type="date"
+              value={fecha}
+              onChange={(e) => setFecha(e.target.value)}
               className="mt-2 w-full rounded-2xl border border-zinc-800 bg-zinc-900 px-4 py-3 outline-none"
             />
           </div>
