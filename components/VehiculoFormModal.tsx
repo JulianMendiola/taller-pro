@@ -47,8 +47,8 @@ export default function VehiculoFormModal({ vehiculo, onClose, onSuccess }: Prop
   }
 
   async function guardarVehiculo() {
-    if (!marca.trim() || !modelo.trim() || !patente.trim()) {
-      setError("Completá marca, modelo y patente.");
+    if (!patente.trim()) {
+      setError("La patente es obligatoria.");
       return;
     }
 
